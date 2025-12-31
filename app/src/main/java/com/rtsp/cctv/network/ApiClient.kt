@@ -31,7 +31,7 @@ class ApiClient(tokenStore: TokenStore) {
         .build()
 
     private val retrofit = Retrofit.Builder()
-        .baseUrl(BuildConfig.API_BASE_URL)
+        .baseUrl(ApiConfig.BASE_URL)
         .client(client)
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()

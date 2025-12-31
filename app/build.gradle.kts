@@ -18,8 +18,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        buildConfigField("String", "API_BASE_URL", "\"https://lisandro.sytes.net/cam/\"")
     }
 
     buildTypes {
