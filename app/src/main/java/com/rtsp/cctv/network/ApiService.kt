@@ -1,5 +1,6 @@
 package com.rtsp.cctv.network
 
+import com.rtsp.cctv.data.Camera
 import com.rtsp.cctv.data.CameraListResponse
 import com.rtsp.cctv.data.LoginResponse
 import retrofit2.http.GET
@@ -20,5 +21,5 @@ interface ApiService {
     suspend fun getCameras(): CameraListResponse
 
     @GET("cameras/{id}")
-    suspend fun getCamera(@Path("id") id: Int): com.rtsp.cctv.data.Camera
+    suspend fun getCamera(@Path("id") id: Int): Camera
 }
