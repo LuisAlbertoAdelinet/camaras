@@ -1,6 +1,5 @@
 package com.rtsp.cctv.network
 
-import com.rtsp.cctv.BuildConfig
 import com.rtsp.cctv.data.TokenStore
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
