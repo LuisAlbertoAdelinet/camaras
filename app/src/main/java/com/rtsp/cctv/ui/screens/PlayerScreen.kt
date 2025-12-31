@@ -17,12 +17,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.rtsp.cctv.data.Camera
 import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -61,6 +63,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
