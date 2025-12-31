@@ -1,5 +1,7 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.rtsp.cctv.ui.screens
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
