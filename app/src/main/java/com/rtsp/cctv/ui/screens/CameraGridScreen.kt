@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +29,7 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
     val context = LocalContext.current
