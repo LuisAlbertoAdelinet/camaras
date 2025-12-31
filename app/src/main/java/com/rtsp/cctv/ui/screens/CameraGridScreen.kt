@@ -1,5 +1,6 @@
 package com.rtsp.cctv.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +13,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,7 +29,6 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
     val context = LocalContext.current
@@ -52,8 +51,9 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
         items(cameras.value, key = { it.id }) { camera ->
             Card(
                 colors = CardDefaults.cardColors(),
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onOpenCamera(camera.id) }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenCamera(camera.id) }
             ) {
                 Box(
                     modifier = Modifier
