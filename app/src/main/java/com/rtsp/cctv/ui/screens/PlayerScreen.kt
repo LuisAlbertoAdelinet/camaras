@@ -24,7 +24,6 @@ import com.rtsp.cctv.data.Camera
 import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 
-@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -63,7 +62,6 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     }
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
