@@ -2,6 +2,8 @@ package com.rtsp.cctv.network
 
 import com.rtsp.cctv.BuildConfig
 import com.rtsp.cctv.data.TokenStore
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -24,10 +26,14 @@ class ApiClient(tokenStore: TokenStore) {
         .addInterceptor(authInterceptor)
         .build()
 
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
     private val retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.API_BASE_URL)
         .client(client)
-        .addConverterFactory(MoshiConverterFactory.create())
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
 
     val api: ApiService = retrofit.create(ApiService::class.java)
