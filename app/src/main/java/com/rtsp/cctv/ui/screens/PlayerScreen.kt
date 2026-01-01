@@ -1,4 +1,4 @@
-@file:OptIn(UnstableApi::class)
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.rtsp.cctv.ui.screens
 
 import android.widget.Toast
@@ -39,7 +39,8 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 import javax.net.SocketFactory
-import kotlin.OptIn
+
+// Note: OptIn is a compiler feature, file-level annotation doesn't strictly need the import here if fully qualified at line 1.
 
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
