@@ -102,7 +102,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
             }
         }
         camera.value?.let { cam ->
-            RtspPlayer(rtspUrl = cam.rtspUrl, modifier = Modifier.fillMaxSize())
+            RtspPlayer(rtspUrl = cam.rtspUrl, modifier = Modifier.weight(1f).fillMaxWidth())
         } ?: run {
             Text(
                 text = "Cargando...",
@@ -142,8 +142,13 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
-                this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                this.useController = true
+                this.setShowNextButton(false)
+                this.setShowPreviousButton(false)
             }
+        },
+        update = { view ->
+            view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         },
         modifier = modifier
     )
