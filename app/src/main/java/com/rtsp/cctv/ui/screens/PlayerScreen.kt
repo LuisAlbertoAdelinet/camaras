@@ -1,7 +1,7 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:OptIn(UnstableApi::class)
 package com.rtsp.cctv.ui.screens
 
-import androidx.annotation.OptIn
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,26 +10,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.rtsp.RtspMediaSource
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import javax.net.SocketFactory
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.rtsp.cctv.data.Camera
 import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
+import com.rtsp.cctv.network.snapshotUrl
+import javax.net.SocketFactory
+import kotlin.OptIn
 
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
@@ -46,24 +56,24 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val showSnapshot = remember { mutableStateOf(false) }
 
     if (showSnapshot.value) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showSnapshot.value = false }) {
-            androidx.compose.material3.Card(
+        Dialog(onDismissRequest = { showSnapshot.value = false }) {
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
                     .padding(16.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    val requestBuilder = coil.request.ImageRequest.Builder(context)
-                        .data(com.rtsp.cctv.network.snapshotUrl(cameraId))
+                Box(contentAlignment = Alignment.Center) {
+                    val requestBuilder = ImageRequest.Builder(context)
+                        .data(snapshotUrl(cameraId))
                         .crossfade(true)
                     
                     tokenStore.getToken()?.let { token ->
                         requestBuilder.addHeader("Authorization", "Bearer $token")
                     }
                     
-                    coil.compose.AsyncImage(
+                    AsyncImage(
                         model = requestBuilder.build(),
                         contentDescription = "Snapshot",
                         modifier = Modifier.fillMaxSize()
@@ -85,7 +95,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                 Text("Snapshot")
             }
             Button(onClick = { 
-                android.widget.Toast.makeText(context, "Grabación: Próximamente", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Grabación: Próximamente", Toast.LENGTH_SHORT).show()
              }) {
                 Text("Grabar")
             }
@@ -96,7 +106,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
             Text(
                 text = "Cargando...",
                 modifier = Modifier.padding(12.dp),
-                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -131,7 +141,7 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
-                this.resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             }
         },
         modifier = modifier

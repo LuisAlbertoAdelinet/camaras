@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,14 +46,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     ) {
         Text(
             text = "Lisan Cam",
-            style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
-            color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
         )
         
-        androidx.compose.material3.Card(
+        Card(
             modifier = Modifier.padding(top = 32.dp).fillMaxWidth(),
-            colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
-            elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -85,14 +89,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         }
                     },
                     modifier = Modifier.padding(top = 24.dp).fillMaxWidth(),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Entrar")
                 }
             }
         }
         error.value?.let { message ->
-            Text(text = message, modifier = Modifier.padding(top = 12.dp), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            Text(text = message, modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
         }
     }
 }
