@@ -145,9 +145,12 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
                 this.useController = true
                 this.setShowNextButton(false)
                 this.setShowPreviousButton(false)
+                this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                this.setShutterBackgroundColor(android.graphics.Color.BLACK)
             }
         },
         update = { view ->
+            // Update the view if needed, but resizeMode is now in factory
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         },
         modifier = modifier
