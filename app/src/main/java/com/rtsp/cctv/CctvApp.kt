@@ -15,7 +15,7 @@ import com.rtsp.cctv.ui.screens.PlayerScreen
 import com.rtsp.cctv.ui.screens.ProfileScreen
 
 @Composable
-fun CctvApp() {
+fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenStore = remember { TokenStore(context) }
@@ -44,6 +44,8 @@ fun CctvApp() {
         }
         composable("profile") {
             ProfileScreen(
+                isDark = isDark,
+                onThemeChange = onThemeChange,
                 onBack = { navController.popBackStack() },
                 onLogout = {
                     tokenStore.clear()

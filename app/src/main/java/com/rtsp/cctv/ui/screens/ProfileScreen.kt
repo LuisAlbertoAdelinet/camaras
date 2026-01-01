@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Brightness4
+import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -21,7 +23,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
+fun ProfileScreen(
+    isDark: Boolean,
+    onThemeChange: (Boolean) -> Unit,
+    onBack: () -> Unit,
+    onLogout: () -> Unit
+) {
     val context = LocalContext.current
     val tokenStore = remember { TokenStore(context) }
     val api = remember { ApiClient(tokenStore).api }
@@ -65,6 +72,32 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                 username = profileData.value?.get("username")?.toString() ?: "Cargando...",
                 role = profileData.value?.get("role")?.toString() ?: "..."
             )
+
+            // Theme Toggle Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (isDark) Icons.Default.Brightness4 else Icons.Default.BrightnessHigh,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Tema Oscuro", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Switch(
+                        checked = isDark,
+                        onCheckedChange = onThemeChange
+                    )
+                }
+            }
 
             // Change Password Card
             Card(

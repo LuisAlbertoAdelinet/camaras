@@ -29,9 +29,23 @@ private val DarkColorScheme = darkColorScheme(
     error = ErrorColor
 )
 
+private val LightColorScheme = lightColorScheme(
+    primary = PrimaryColor,
+    secondary = SecondaryColor,
+    tertiary = PrimaryVariant,
+    background = androidx.compose.ui.graphics.Color(0xFFF8FAFC),
+    surface = androidx.compose.ui.graphics.Color.White,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF1E293B),
+    onTertiary = androidx.compose.ui.graphics.Color.White,
+    onBackground = androidx.compose.ui.graphics.Color(0xFF0F172A),
+    onSurface = androidx.compose.ui.graphics.Color(0xFF0F172A),
+    error = ErrorColor
+)
+
 @Composable
 fun RtspCctvTheme(
-    darkTheme: Boolean = true, // Force Dark Theme for now for the "Modern" look
+    darkTheme: Boolean = true,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
@@ -41,7 +55,8 @@ fun RtspCctvTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        else -> DarkColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
     }
     val view = LocalView.current
     if (!view.isInEditMode) {

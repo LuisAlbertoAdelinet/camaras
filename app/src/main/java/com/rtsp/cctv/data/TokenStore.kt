@@ -16,4 +16,10 @@ class TokenStore(context: Context) {
     fun clear() {
         prefs.edit().remove("token").apply()
     }
+
+    fun isDarkMode(): Boolean = prefs.getBoolean("dark_mode", true)
+
+    fun setDarkMode(enabled: Boolean) {
+        prefs.edit().putBoolean("dark_mode", enabled).apply()
+    }
 }
