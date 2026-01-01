@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.rtsp.RtspMediaSource
@@ -39,6 +40,7 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 import javax.net.SocketFactory
+import kotlin.OptIn
 
 // Note: OptIn is a compiler feature, file-level annotation doesn't strictly need the import here if fully qualified at line 1.
 
@@ -147,11 +149,17 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
                 this.setShowPreviousButton(false)
                 this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                 this.setShutterBackgroundColor(android.graphics.Color.BLACK)
+                
+                player.addListener(object : Player.Listener {
+                    override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                        post { requestLayout() }
+                    }
+                })
             }
         },
         update = { view ->
-            // Update the view if needed, but resizeMode is now in factory
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            view.requestLayout()
         },
         modifier = modifier
     )
