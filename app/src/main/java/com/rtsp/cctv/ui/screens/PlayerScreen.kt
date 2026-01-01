@@ -68,11 +68,19 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val player = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(rtspUrl))
-            prepare()
-            playWhenReady = true
-        }
+        val mediaSourceFactory = androidx.media3.exoplayer.rtsp.RtspMediaSource.Factory()
+            .setForceUseRtpTcp(true)
+            .setSocketFactory(javax.net.SocketFactory.getDefault())
+
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build()
+            .apply {
+                val mediaItem = MediaItem.fromUri(rtspUrl)
+                setMediaItem(mediaItem)
+                prepare()
+                playWhenReady = true
+            }
     }
 
     DisposableEffect(Unit) {
