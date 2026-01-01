@@ -62,8 +62,8 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
         ) {
             // User Info Card
             ProfileInfoCard(
-                username = profileData.value? web_application_development["username"]?.toString() ?: "Cargando...",
-                role = profileData.value? web_application_development["role"]?.toString() ?: "..."
+                username = profileData.value?.get("username")?.toString() ?: "Cargando...",
+                role = profileData.value?.get("role")?.toString() ?: "..."
             )
 
             // Change Password Card
