@@ -110,7 +110,7 @@ fun ProfileScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                         enabled = !isChanging.value
                     ) {
                         if (isChanging.value) {
-                            CircularProgressIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary)
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                         } else {
                             Text("Actualizar")
                         }
