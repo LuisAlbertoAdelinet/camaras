@@ -40,6 +40,36 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
             .onSuccess { camera.value = it }
     }
 
+    val showSnapshot = remember { mutableStateOf(false) }
+
+    if (showSnapshot.value) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showSnapshot.value = false }) {
+            androidx.compose.material3.Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .padding(16.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            ) {
+                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    val requestBuilder = coil.request.ImageRequest.Builder(context)
+                        .data(com.rtsp.cctv.network.snapshotUrl(cameraId))
+                        .crossfade(true)
+                    
+                    tokenStore.getToken()?.let { token ->
+                        requestBuilder.addHeader("Authorization", "Bearer $token")
+                    }
+                    
+                    coil.compose.AsyncImage(
+                        model = requestBuilder.build(),
+                        contentDescription = "Snapshot",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -48,10 +78,12 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
             Button(onClick = onBack) {
                 Text("Volver")
             }
-            Button(onClick = { /* TODO: snapshot */ }) {
+            Button(onClick = { showSnapshot.value = true }) {
                 Text("Snapshot")
             }
-            Button(onClick = { /* TODO: grabar */ }) {
+            Button(onClick = { 
+                android.widget.Toast.makeText(context, "Grabación: Próximamente", android.widget.Toast.LENGTH_SHORT).show()
+             }) {
                 Text("Grabar")
             }
         }
@@ -60,7 +92,8 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
         } ?: run {
             Text(
                 text = "Cargando...",
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -95,6 +128,7 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
+                this.resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
             }
         },
         modifier = modifier

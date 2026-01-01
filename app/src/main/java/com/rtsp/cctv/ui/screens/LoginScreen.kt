@@ -39,40 +39,59 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Login")
-        OutlinedTextField(
-            value = username.value,
-            onValueChange = { username.value = it },
-            label = { Text("Usuario") },
-            modifier = Modifier.padding(top = 16.dp)
+        Text(
+            text = "Lisan Cam",
+            style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.primary
         )
-        OutlinedTextField(
-            value = password.value,
-            onValueChange = { password.value = it },
-            label = { Text("Clave") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.padding(top = 12.dp)
-        )
-        Button(
-            onClick = {
-                error.value = null
-                scope.launch {
-                    runCatching {
-                        api.login(LoginRequest(username.value, password.value))
-                    }.onSuccess { response ->
-                        tokenStore.saveToken(response.token)
-                        onLoginSuccess()
-                    }.onFailure {
-                        error.value = "Credenciales invalidas"
-                    }
-                }
-            },
-            modifier = Modifier.padding(top = 16.dp)
+        
+        androidx.compose.material3.Card(
+            modifier = Modifier.padding(top = 32.dp).fillMaxWidth(),
+            colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+            elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Text("Entrar")
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OutlinedTextField(
+                    value = username.value,
+                    onValueChange = { username.value = it },
+                    label = { Text("Usuario") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = password.value,
+                    onValueChange = { password.value = it },
+                    label = { Text("Clave") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.padding(top = 12.dp).fillMaxWidth()
+                )
+                Button(
+                    onClick = {
+                        error.value = null
+                        scope.launch {
+                            runCatching {
+                                api.login(LoginRequest(username.value, password.value))
+                            }.onSuccess { response ->
+                                tokenStore.saveToken(response.token)
+                                onLoginSuccess()
+                            }.onFailure {
+                                error.value = "Credenciales invalidas"
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(top = 24.dp).fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Entrar")
+                }
+            }
         }
         error.value?.let { message ->
-            Text(text = message, modifier = Modifier.padding(top = 12.dp))
+            Text(text = message, modifier = Modifier.padding(top = 12.dp), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
         }
     }
 }

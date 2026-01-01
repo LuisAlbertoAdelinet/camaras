@@ -50,7 +50,9 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
     ) {
         items(cameras.value, key = { it.id }) { camera ->
             Card(
-                colors = CardDefaults.cardColors(),
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onOpenCamera(camera.id) }
