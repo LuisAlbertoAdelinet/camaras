@@ -21,7 +21,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.rtsp.RtspMediaSource
 import androidx.media3.ui.PlayerView
+import javax.net.SocketFactory
 import com.rtsp.cctv.data.Camera
 import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
@@ -68,9 +70,9 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val player = remember {
-        val mediaSourceFactory = androidx.media3.exoplayer.rtsp.RtspMediaSource.Factory()
+        val mediaSourceFactory = RtspMediaSource.Factory()
             .setForceUseRtpTcp(true)
-            .setSocketFactory(javax.net.SocketFactory.getDefault())
+            .setSocketFactory(SocketFactory.getDefault())
 
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
