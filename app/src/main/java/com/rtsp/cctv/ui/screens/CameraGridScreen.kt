@@ -31,8 +31,13 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.*
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
+fun CameraGridScreen(onOpenCamera: (Int) -> Unit, onOpenProfile: () -> Unit) {
     val context = LocalContext.current
     val tokenStore = remember { TokenStore(context) }
     val api = remember { ApiClient(tokenStore).api }
@@ -43,48 +48,71 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit) {
             .onSuccess { cameras.value = it.items }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(180.dp),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(cameras.value, key = { it.id }) { camera ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenCamera(camera.id) }
-            ) {
-                Box(
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Lisan Cam", style = MaterialTheme.typography.titleLarge) },
+                actions = {
+                    IconButton(onClick = onOpenProfile) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Perfil",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(180.dp),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
+            items(cameras.value, key = { it.id }) { camera ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
-                    contentAlignment = Alignment.Center
+                        .clickable { onOpenCamera(camera.id) }
                 ) {
-                    val requestBuilder = ImageRequest.Builder(context)
-                        .data(snapshotUrl(camera.id))
-                        .crossfade(true)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val requestBuilder = ImageRequest.Builder(context)
+                            .data(snapshotUrl(camera.id))
+                            .crossfade(true)
 
-                    tokenStore.getToken()?.let { token ->
-                        requestBuilder.addHeader("Authorization", "Bearer $token")
+                        tokenStore.getToken()?.let { token ->
+                            requestBuilder.addHeader("Authorization", "Bearer $token")
+                        }
+
+                        val request = requestBuilder.build()
+
+                        AsyncImage(
+                            model = request,
+                            contentDescription = camera.name,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-
-                    val request = requestBuilder.build()
-
-                    AsyncImage(
-                        model = request,
-                        contentDescription = camera.name,
-                        modifier = Modifier.fillMaxSize()
+                    Text(
+                        text = camera.name,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                Text(
-                    text = camera.name,
-                    modifier = Modifier.padding(12.dp)
-                )
             }
         }
     }

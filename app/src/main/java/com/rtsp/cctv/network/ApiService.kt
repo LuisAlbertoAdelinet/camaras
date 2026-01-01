@@ -13,9 +13,19 @@ data class LoginRequest(
     val password: String
 )
 
+data class ChangePasswordRequest(
+    val new_password: String
+)
+
 interface ApiService {
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): LoginResponse
+
+    @GET("me")
+    suspend fun getProfile(): Map<String, Any>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body body: ChangePasswordRequest): Map<String, Any>
 
     @GET("cameras")
     suspend fun getCameras(): CameraListResponse

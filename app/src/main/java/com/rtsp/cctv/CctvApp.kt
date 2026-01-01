@@ -12,6 +12,7 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.ui.screens.CameraGridScreen
 import com.rtsp.cctv.ui.screens.LoginScreen
 import com.rtsp.cctv.ui.screens.PlayerScreen
+import com.rtsp.cctv.ui.screens.ProfileScreen
 
 @Composable
 fun CctvApp() {
@@ -35,6 +36,20 @@ fun CctvApp() {
             CameraGridScreen(
                 onOpenCamera = { cameraId ->
                     navController.navigate("player/$cameraId")
+                },
+                onOpenProfile = {
+                    navController.navigate("profile")
+                }
+            )
+        }
+        composable("profile") {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    tokenStore.saveToken(null)
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
