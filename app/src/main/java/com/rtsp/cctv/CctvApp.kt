@@ -46,7 +46,7 @@ fun CctvApp() {
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    tokenStore.saveToken(null)
+                    tokenStore.clear()
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
