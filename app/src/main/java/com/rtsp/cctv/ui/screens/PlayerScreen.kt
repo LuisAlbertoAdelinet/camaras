@@ -252,7 +252,7 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
                     this.setShutterBackgroundColor(android.graphics.Color.BLACK)
                     
                     // FORZAR TEXTURE_VIEW PARA ZOOM PODEROSO
-                    this.setVideoSurfaceView(android.view.TextureView(ctx))
+                    this.setVideoTextureView(android.view.TextureView(ctx))
                     
                     player.addListener(object : Player.Listener {
                         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
