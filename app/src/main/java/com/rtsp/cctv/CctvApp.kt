@@ -13,6 +13,7 @@ import com.rtsp.cctv.ui.screens.CameraGridScreen
 import com.rtsp.cctv.ui.screens.LoginScreen
 import com.rtsp.cctv.ui.screens.PlayerScreen
 import com.rtsp.cctv.ui.screens.ProfileScreen
+import com.rtsp.cctv.ui.screens.SnapshotGalleryScreen
 
 @Composable
 fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
@@ -47,6 +48,7 @@ fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
                 isDark = isDark,
                 onThemeChange = onThemeChange,
                 onBack = { navController.popBackStack() },
+                onOpenSnapshots = { navController.navigate("snapshots") },
                 onLogout = {
                     tokenStore.clear()
                     navController.navigate("login") {
@@ -54,6 +56,9 @@ fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
                     }
                 }
             )
+        }
+        composable("snapshots") {
+            SnapshotGalleryScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = "player/{cameraId}",

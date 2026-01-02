@@ -7,6 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.DELETE
 
 data class LoginRequest(
     val username: String,
@@ -15,6 +16,15 @@ data class LoginRequest(
 
 data class ChangePasswordRequest(
     val new_password: String
+)
+
+data class Snapshot(
+    val id: Int,
+    val user_id: Int,
+    val camera_id: Int,
+    val camera_name: String,
+    val filename: String,
+    val created_at: String
 )
 
 interface ApiService {
@@ -32,4 +42,16 @@ interface ApiService {
 
     @GET("cameras/{id}")
     suspend fun getCamera(@Path("id") id: Int): Camera
+
+    @POST("cameras/{id}/snapshot/save")
+    suspend fun saveSnapshot(@Path("id") id: Int): Map<String, Any>
+
+    @GET("snapshots")
+    suspend fun getSnapshots(): Map<String, List<Snapshot>>
+
+    @GET("snapshots/{id}/image")
+    fun getSnapshotImageUrl(@Path("id") id: Int): String
+
+    @DELETE("snapshots/{id}")
+    suspend fun deleteSnapshot(@Path("id") id: Int): Map<String, Any>
 }

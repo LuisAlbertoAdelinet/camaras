@@ -6,8 +6,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.material.icons.filled.BrightnessHigh
+import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ fun ProfileScreen(
     isDark: Boolean,
     onThemeChange: (Boolean) -> Unit,
     onBack: () -> Unit,
+    onOpenSnapshots: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -95,6 +98,34 @@ fun ProfileScreen(
                     Switch(
                         checked = isDark,
                         onCheckedChange = onThemeChange
+                    )
+                }
+            }
+
+            // Snapshots Gallery Card
+            Card(
+                modifier = Modifier.fillMaxWidth().clickable { onOpenSnapshots() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Mis Capturas", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Icon(
+                        Icons.Default.ArrowBack, // TODO: Use ArrowForward if available, or stay as is
+                        contentDescription = null,
+                        modifier = Modifier.graphicsLayer(rotationZ = 180f),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 }
             }

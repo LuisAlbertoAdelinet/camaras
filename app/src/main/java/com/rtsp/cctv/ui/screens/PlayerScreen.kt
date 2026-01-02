@@ -12,18 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,6 +41,7 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 import javax.net.SocketFactory
+import kotlinx.coroutines.launch
 import kotlin.OptIn
 
 // Note: OptIn is a compiler feature, file-level annotation doesn't strictly need the import here if fully qualified at line 1.
@@ -91,31 +88,103 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Button(onClick = onBack) {
-                Text("Volver")
-            }
-            Button(onClick = { showSnapshot.value = true }) {
-                Text("Snapshot")
-            }
-            Button(onClick = { 
-                Toast.makeText(context, "Grabación: Próximamente", Toast.LENGTH_SHORT).show()
-             }) {
-                Text("Grabar")
+    val scope = rememberCoroutineScope()
+    val isSaving = remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        camera.value?.let { cam ->
+            RtspPlayer(rtspUrl = cam.rtspUrl, modifier = Modifier.fillMaxSize())
+        } ?: run {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
-        camera.value?.let { cam ->
-            RtspPlayer(rtspUrl = cam.rtspUrl, modifier = Modifier.weight(1f).fillMaxWidth())
-        } ?: run {
-            Text(
-                text = "Cargando...",
-                modifier = Modifier.padding(12.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
+
+        // Overlay Controls
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Top Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Black.copy(alpha = 0.5f),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                }
+
+                Text(
+                    text = camera.value?.name ?: "Cargando...",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                Spacer(Modifier.width(48.dp)) // Empujar título al centro
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // Bottom Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FloatingActionButton(
+                    onClick = { showSnapshot.value = true },
+                    containerColor = Color.Black.copy(alpha = 0.5f),
+                    contentColor = Color.White,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Preview Snapshot")
+                }
+
+                FloatingActionButton(
+                    onClick = {
+                        scope.launch {
+                            isSaving.value = true
+                            runCatching { api.saveSnapshot(cameraId) }
+                                .onSuccess { 
+                                    Toast.makeText(context, "Captura guardada en la nube", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure { 
+                                    Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
+                                }
+                            isSaving.value = false
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    if (isSaving.value) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Icon(Icons.Default.Save, contentDescription = "Guardar Snapshot")
+                    }
+                }
+
+                FloatingActionButton(
+                    onClick = { 
+                        Toast.makeText(context, "Grabación: Próximamente", Toast.LENGTH_SHORT).show()
+                    },
+                    containerColor = Color.Black.copy(alpha = 0.5f),
+                    contentColor = Color.White,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Videocam, contentDescription = "Grabar")
+                }
+            }
         }
     }
 }
@@ -173,11 +242,14 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     this.player = player
-                    this.useController = true
+                    this.useController = false // No queremos controles nativos ahora
                     this.setShowNextButton(false)
                     this.setShowPreviousButton(false)
                     this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                     this.setShutterBackgroundColor(android.graphics.Color.BLACK)
+                    
+                    // FORZAR TEXTURE_VIEW PARA ZOOM PODEROSO
+                    this.setVideoSurfaceView(android.view.TextureView(ctx))
                     
                     player.addListener(object : Player.Listener {
                         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
