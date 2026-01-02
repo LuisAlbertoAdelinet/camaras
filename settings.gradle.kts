@@ -3,6 +3,10 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        // Fallback mirrors for 403 errors
+        maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/public")
+        maven("https://maven.aliyun.com/repository/google")
     }
 }
 
@@ -11,6 +15,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Fallback mirrors for 403 errors
+        maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/public")
+        maven("https://maven.aliyun.com/repository/google")
     }
 }
 
