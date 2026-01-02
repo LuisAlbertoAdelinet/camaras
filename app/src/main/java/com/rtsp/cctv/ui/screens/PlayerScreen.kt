@@ -71,32 +71,39 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     // Handle fullscreen for landscape mode
     DisposableEffect(isLandscape) {
         val activity = context as? Activity
-        if (activity != null) {
-            val window = activity.window
-            val decorView = window.decorView
-            val insetsController = WindowCompat.getInsetsController(window, decorView)
-            
+        val window = activity?.window
+        val decorView = window?.decorView
+        
+        if (activity != null && window != null && decorView != null) {
             if (isLandscape) {
-                // Enter fullscreen: hide status bar and navigation bar
-                insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                insetsController.systemBarsBehavior = 
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                // Enter fullscreen: hide status bar and navigation bar using legacy API
+                @Suppress("DEPRECATION")
+                decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                )
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             } else {
                 // Exit fullscreen: show system bars
-                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                @Suppress("DEPRECATION")
+                decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
         
         onDispose {
             // Restore system bars when leaving the screen
-            val activity = context as? Activity
-            if (activity != null) {
-                val window = activity.window
-                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                insetsController.show(WindowInsetsCompat.Type.systemBars())
-                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val act = context as? Activity
+            val win = act?.window
+            val decor = win?.decorView
+            if (decor != null && win != null) {
+                @Suppress("DEPRECATION")
+                decor.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+                win.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
     }

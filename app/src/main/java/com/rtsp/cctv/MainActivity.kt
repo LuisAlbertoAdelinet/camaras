@@ -8,17 +8,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.view.WindowCompat
 import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.ui.theme.RtspCctvTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Enable edge-to-edge display for fullscreen support
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        
         setContent {
             val context = LocalContext.current
             val tokenStore = remember { TokenStore(context) }
