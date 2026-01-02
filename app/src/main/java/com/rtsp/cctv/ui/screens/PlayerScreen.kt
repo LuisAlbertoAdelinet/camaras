@@ -1,6 +1,10 @@
 @file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.rtsp.cctv.ui.screens
 
+import android.app.Activity
+import android.content.res.Configuration
+import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -26,10 +30,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -55,6 +63,43 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val tokenStore = remember { TokenStore(context) }
     val api = remember { ApiClient(tokenStore).api }
     val camera = remember { mutableStateOf<Camera?>(null) }
+    
+    // Detect orientation
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // Handle fullscreen for landscape mode
+    DisposableEffect(isLandscape) {
+        val activity = context as? Activity
+        if (activity != null) {
+            val window = activity.window
+            val decorView = window.decorView
+            val insetsController = WindowCompat.getInsetsController(window, decorView)
+            
+            if (isLandscape) {
+                // Enter fullscreen: hide status bar and navigation bar
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                insetsController.systemBarsBehavior = 
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                // Exit fullscreen: show system bars
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+        
+        onDispose {
+            // Restore system bars when leaving the screen
+            val activity = context as? Activity
+            if (activity != null) {
+                val window = activity.window
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+    }
 
     LaunchedEffect(cameraId) {
         runCatching { api.getCamera(cameraId) }
