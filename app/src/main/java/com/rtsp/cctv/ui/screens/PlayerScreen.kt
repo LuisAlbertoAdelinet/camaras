@@ -189,28 +189,20 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 
             Spacer(Modifier.weight(1f))
 
-            // Bottom Actions
+            // Bottom Actions - Simplified: Save and Record
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FloatingActionButton(
-                    onClick = { showSnapshot.value = true },
-                    containerColor = Color.Black.copy(alpha = 0.5f),
-                    contentColor = Color.White,
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Preview Snapshot")
-                }
-
+                // Save Snapshot Button
                 FloatingActionButton(
                     onClick = {
                         scope.launch {
                             isSaving.value = true
                             runCatching { api.saveSnapshot(cameraId) }
                                 .onSuccess { 
-                                    Toast.makeText(context, "Captura guardada en la nube", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Captura guardada ✓", Toast.LENGTH_SHORT).show()
                                 }
                                 .onFailure { 
                                     Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
@@ -220,22 +212,23 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     if (isSaving.value) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Icon(Icons.Default.Save, contentDescription = "Guardar Snapshot")
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Capturar")
                     }
                 }
 
+                // Record Button (Future)
                 FloatingActionButton(
                     onClick = { 
                         Toast.makeText(context, "Grabación: Próximamente", Toast.LENGTH_SHORT).show()
                     },
                     containerColor = Color.Black.copy(alpha = 0.5f),
                     contentColor = Color.White,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     Icon(Icons.Default.Videocam, contentDescription = "Grabar")
                 }
