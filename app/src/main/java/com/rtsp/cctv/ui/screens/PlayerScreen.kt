@@ -148,7 +148,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         camera.value?.let { cam ->
-            RtspPlayer(rtspUrl = cam.rtspUrl, modifier = Modifier.fillMaxSize())
+            RtspPlayer(rtspUrl = cam.rtspUrl, isLandscape = isLandscape, modifier = Modifier.fillMaxSize())
         } ?: run {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -245,7 +245,7 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 }
 
 @Composable
-fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
+fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     
     val scale = remember { mutableStateOf(1f) }
@@ -273,6 +273,13 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
             player.release()
         }
     }
+    
+    // Determine resize mode based on orientation
+    val resizeMode = if (isLandscape) {
+        AspectRatioFrameLayout.RESIZE_MODE_FILL
+    } else {
+        AspectRatioFrameLayout.RESIZE_MODE_FIT
+    }
 
     Box(
         modifier = modifier
@@ -297,14 +304,11 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     this.player = player
-                    this.useController = false // No queremos controles nativos ahora
+                    this.useController = false
                     this.setShowNextButton(false)
                     this.setShowPreviousButton(false)
-                    this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    this.resizeMode = resizeMode
                     this.setShutterBackgroundColor(android.graphics.Color.BLACK)
-                    
-                    // FORZAR TEXTURE_VIEW PARA ZOOM PODEROSO (Eliminado por error de compitacion)
-                    // this.setVideoTextureView(android.view.TextureView(ctx))
                     
                     player.addListener(object : Player.Listener {
                         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
@@ -314,7 +318,7 @@ fun RtspPlayer(rtspUrl: String, modifier: Modifier = Modifier) {
                 }
             },
             update = { view ->
-                view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                view.resizeMode = resizeMode
                 view.requestLayout()
             },
             modifier = Modifier
