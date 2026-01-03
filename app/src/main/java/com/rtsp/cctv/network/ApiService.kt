@@ -56,6 +56,13 @@ interface ApiService {
     @POST("cameras/{id}/snapshot/save")
     suspend fun saveSnapshot(@Path("id") id: Int): Map<String, Any>
 
+    @retrofit2.http.Multipart
+    @POST("cameras/{id}/snapshot/upload")
+    suspend fun uploadSnapshot(
+        @Path("id") id: Int,
+        @retrofit2.http.Part image: okhttp3.MultipartBody.Part
+    ): Map<String, Any>
+
     @GET("snapshots")
     suspend fun getSnapshots(): Map<String, List<Snapshot>>
 

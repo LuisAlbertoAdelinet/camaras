@@ -130,6 +130,31 @@ suspend fun saveBitmapToGallery(
     }
 }
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+import java.io.FileOutputStream
+
+/**
+ * Save Bitmap to a temporary file in cache directory for uploading
+ */
+fun saveBitmapToCache(context: android.content.Context, bitmap: Bitmap): File? {
+    return try {
+        val cacheDir = context.cacheDir
+        val file = File(cacheDir, "upload_snap_${System.currentTimeMillis()}.jpg")
+        file.createNewFile()
+        
+        val fos = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos)
+        fos.flush()
+        fos.close()
+        file
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -329,12 +354,33 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                             val bitmap = captureViewToBitmap(containerView)
                             
                             if (bitmap != null) {
+                                // 1. Save to Gallery
                                 val cameraName = camera.value?.name?.replace(" ", "_") ?: "camera"
-                                val saved = saveBitmapToGallery(context, bitmap, cameraName)
+                                val savedToGallery = saveBitmapToGallery(context, bitmap, cameraName)
+                                
+                                // 2. Upload to Server
+                                val cacheFile = saveBitmapToCache(context, bitmap)
+                                var uploaded = false
+                                if (cacheFile != null) {
+                                    runCatching {
+                                        val requestFile = cacheFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                                        val body = MultipartBody.Part.createFormData("image", cacheFile.name, requestFile)
+                                        api.uploadSnapshot(cameraId, body)
+                                    }.onSuccess {
+                                        uploaded = true
+                                        cacheFile.delete()
+                                    }.onFailure { e ->
+                                        e.printStackTrace()
+                                    }
+                                }
+                                
                                 bitmap.recycle()
                                 
-                                if (saved) {
-                                    Toast.makeText(context, "Captura guardada en Galería ✓", Toast.LENGTH_SHORT).show()
+                                if (savedToGallery || uploaded) {
+                                    val msg = if (savedToGallery && uploaded) "Guardada y subida ✓" 
+                                             else if (savedToGallery) "Guardada en Galería ✓" 
+                                             else "Subida al servidor ✓"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 } else {
                                     Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
                                 }
