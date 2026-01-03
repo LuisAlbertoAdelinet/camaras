@@ -2,6 +2,7 @@
 package com.rtsp.cctv.ui.screens
 
 import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.view.View
 import android.view.WindowManager
@@ -64,11 +65,35 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
     val api = remember { ApiClient(tokenStore).api }
     val camera = remember { mutableStateOf<Camera?>(null) }
     
+    // State for forced fullscreen mode
+    val isForceFullscreen = remember { mutableStateOf(false) }
+    
     // Detect orientation
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isNaturalLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    
+    // Consider fullscreen if naturally landscape OR forced
+    val isLandscape = isNaturalLandscape || isForceFullscreen.value
 
-    // Handle fullscreen for landscape mode
+    // Handle forced fullscreen - lock to landscape
+    DisposableEffect(isForceFullscreen.value) {
+        val activity = context as? Activity
+        if (activity != null) {
+            if (isForceFullscreen.value) {
+                // Force landscape orientation
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                // Restore to unspecified (follow device settings)
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+        }
+        onDispose {
+            // Restore orientation when leaving
+            (context as? Activity)?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
+    // Handle fullscreen UI visibility for landscape mode
     DisposableEffect(isLandscape) {
         val activity = context as? Activity
         val window = activity?.window
@@ -184,7 +209,21 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
 
-                Spacer(Modifier.width(48.dp)) // Empujar título al centro
+                // Fullscreen Toggle Button
+                IconButton(
+                    onClick = { 
+                        isForceFullscreen.value = !isForceFullscreen.value
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Black.copy(alpha = 0.5f),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isForceFullscreen.value) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                        contentDescription = if (isForceFullscreen.value) "Salir pantalla completa" else "Pantalla completa"
+                    )
+                }
             }
 
             Spacer(Modifier.weight(1f))
