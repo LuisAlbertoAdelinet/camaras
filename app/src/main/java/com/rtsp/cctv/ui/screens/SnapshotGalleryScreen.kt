@@ -86,7 +86,7 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
                 contentPadding = PaddingValues(8.dp),
                 modifier = Modifier.padding(padding)
             ) {
-                items(snapshots.value) { snapshot ->
+                items(snapshots.value, key = { it.id }) { snapshot ->
                     SnapshotCard(
                         snapshot = snapshot,
                         token = tokenStore.getToken() ?: "",
