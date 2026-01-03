@@ -1,6 +1,7 @@
 package com.rtsp.cctv.data
 
 import android.content.Context
+import com.rtsp.cctv.network.ApiClientSingleton
 
 class TokenStore(context: Context) {
     private val prefs = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
@@ -15,6 +16,8 @@ class TokenStore(context: Context) {
 
     fun clear() {
         prefs.edit().remove("token").apply()
+        // Also clear ApiClient singleton to force recreation with new token state
+        ApiClientSingleton.clear()
     }
 
     fun isDarkMode(): Boolean = prefs.getBoolean("dark_mode", false)

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +44,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.rtsp.RtspMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -280,17 +282,30 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     
-    val scale = remember { mutableStateOf(1f) }
-    val offsetX = remember { mutableStateOf(0f) }
-    val offsetY = remember { mutableStateOf(0f) }
+    // Use primitive state holders for better performance (avoids boxing)
+    val scale = remember { mutableFloatStateOf(1f) }
+    val offsetX = remember { mutableFloatStateOf(0f) }
+    val offsetY = remember { mutableFloatStateOf(0f) }
 
     val player = remember {
         val mediaSourceFactory = RtspMediaSource.Factory()
             .setForceUseRtpTcp(true)
             .setSocketFactory(SocketFactory.getDefault())
 
+        // Optimized load control for low-latency RTSP streaming
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                2000,   // minBufferMs - lower = faster start
+                5000,   // maxBufferMs - lower = less RAM
+                500,    // bufferForPlaybackMs - start playback quickly
+                1000    // bufferForPlaybackAfterRebufferMs
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(loadControl)
             .build()
             .apply {
                 val mediaItem = MediaItem.fromUri(rtspUrl)
@@ -318,16 +333,16 @@ fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier
             .clip(RectangleShape)
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    scale.value *= zoom
-                    scale.value = scale.value.coerceIn(1f, 5f)
+                    scale.floatValue *= zoom
+                    scale.floatValue = scale.floatValue.coerceIn(1f, 5f)
                     
                     // Solo permitir desplazamiento si hay zoom
-                    if (scale.value > 1f) {
-                        offsetX.value += pan.x
-                        offsetY.value += pan.y
+                    if (scale.floatValue > 1f) {
+                        offsetX.floatValue += pan.x
+                        offsetY.floatValue += pan.y
                     } else {
-                        offsetX.value = 0f
-                        offsetY.value = 0f
+                        offsetX.floatValue = 0f
+                        offsetY.floatValue = 0f
                     }
                 }
             }
@@ -356,10 +371,10 @@ fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer(
-                    scaleX = scale.value,
-                    scaleY = scale.value,
-                    translationX = offsetX.value,
-                    translationY = offsetY.value
+                    scaleX = scale.floatValue,
+                    scaleY = scale.floatValue,
+                    translationX = offsetX.floatValue,
+                    translationY = offsetY.floatValue
                 )
         )
     }
