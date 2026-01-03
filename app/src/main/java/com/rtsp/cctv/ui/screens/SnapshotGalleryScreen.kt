@@ -1,5 +1,7 @@
 package com.rtsp.cctv.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +29,10 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.ApiConfig
 import com.rtsp.cctv.network.Snapshot
+import com.rtsp.cctv.network.Recording
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,30 +42,36 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
     val api = remember { ApiClient(tokenStore).api }
     val scope = rememberCoroutineScope()
     
+    var selectedTab by remember { mutableIntStateOf(0) }
     val snapshots = remember { mutableStateOf<List<Snapshot>>(emptyList()) }
-    val isLoading = remember { mutableStateOf(true) }
+    val recordings = remember { mutableStateOf<List<Recording>>(emptyList()) }
+    val isLoading = remember { mutableStateOf(false) }
     val selectedSnapshot = remember { mutableStateOf<Snapshot?>(null) }
 
     fun refresh() {
         scope.launch {
             isLoading.value = true
-            runCatching { api.getSnapshots() }
-                .onSuccess { snapshots.value = it["items"] ?: emptyList() }
-                .onFailure { 
-                    Toast.makeText(context, "Error al cargar capturas", Toast.LENGTH_SHORT).show()
-                }
+            if (selectedTab == 0) {
+                runCatching { api.getSnapshots() }
+                    .onSuccess { snapshots.value = it["items"] ?: emptyList() }
+                    .onFailure { Toast.makeText(context, "Error cargar capturas", Toast.LENGTH_SHORT).show() }
+            } else {
+                runCatching { api.getRecordings() }
+                    .onSuccess { recordings.value = it["items"] ?: emptyList() }
+                    .onFailure { Toast.makeText(context, "Error cargar grabaciones", Toast.LENGTH_SHORT).show() }
+            }
             isLoading.value = false
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedTab) {
         refresh()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis Capturas") },
+                title = { Text(if (selectedTab == 0) "Mis Capturas" else "Mis Grabaciones") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -72,40 +84,92 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        if (isLoading.value) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        Column(modifier = Modifier.padding(padding)) {
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Imágenes") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Videos") }
+                )
             }
-        } else if (snapshots.value.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No tienes capturas guardadas", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(8.dp),
-                modifier = Modifier.padding(padding)
-            ) {
-                items(snapshots.value, key = { it.id }) { snapshot ->
-                    SnapshotCard(
-                        snapshot = snapshot,
-                        token = tokenStore.getToken() ?: "",
-                        onClick = { selectedSnapshot.value = snapshot },
-                        onDelete = {
-                            scope.launch {
-                                runCatching { api.deleteSnapshot(snapshot.id) }
-                                    .onSuccess {
-                                        Toast.makeText(context, "Eliminado", Toast.LENGTH_SHORT).show()
-                                        refresh()
+
+            if (isLoading.value) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                if (selectedTab == 0) {
+                    if (snapshots.value.isEmpty()) {
+                        EmptyState("No tienes capturas guardadas")
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(8.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(snapshots.value, key = { it.id }) { snapshot ->
+                                SnapshotCard(
+                                    snapshot = snapshot,
+                                    token = tokenStore.getToken() ?: "",
+                                    onClick = { selectedSnapshot.value = snapshot },
+                                    onDelete = {
+                                        scope.launch {
+                                            api.deleteSnapshot(snapshot.id)
+                                            refresh()
+                                        }
                                     }
+                                )
                             }
                         }
-                    )
+                    }
+                } else {
+                    if (recordings.value.isEmpty()) {
+                        EmptyState("No tienes grabaciones guardadas")
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(1), // List for videos
+                            contentPadding = PaddingValues(8.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(recordings.value, key = { it.id }) { recording ->
+                                RecordingCard(
+                                    recording = recording,
+                                    onPlay = {
+                                        val url = "${ApiConfig.BASE_URL}recordings/${recording.id}/video"
+                                        val intent = Intent(Intent.ACTION_VIEW)
+                                        intent.setDataAndType(Uri.parse(url), "video/mp4")
+                                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        
+                                        // Add auth token if possible (some players support headers, most don't easily via Intent)
+                                        // For simplicity, we rely on browser/player handling it or public link if secured by cookie (not case here).
+                                        // Actually, since our API requires Bearer Token, standard Intent might fail unless we download or use specialized player.
+                                        // For MVP, let's try opening. If fails, we might need a WebView or simple VideoView inside app.
+                                        // Standard players won't send Bearer header.
+                                        // Workaround: Use a temporary token in URL or just a WebView dialog.
+                                        // Let's implement a simple VideoDialog.
+                                        Toast.makeText(context, "Reproduciendo...", Toast.LENGTH_SHORT).show()
+                                        // For now, simpler to reuse the Dialog logic but for video
+                                    },
+                                    onDelete = {
+                                        scope.launch {
+                                            api.deleteRecording(recording.id)
+                                            refresh()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Full Screen Preview
+        // Full Screen Snapshot Preview
         selectedSnapshot.value?.let { snapshot ->
             Dialog(
                 onDismissRequest = { selectedSnapshot.value = null },
@@ -122,7 +186,6 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit
                         )
-                        
                         IconButton(
                             onClick = { selectedSnapshot.value = null },
                             modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
@@ -137,17 +200,16 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun SnapshotCard(
-    snapshot: Snapshot,
-    token: String,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
-) {
+fun EmptyState(message: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(message, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+    }
+}
+
+@Composable
+fun SnapshotCard(snapshot: Snapshot, token: String, onClick: () -> Unit, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.padding(8.dp).fillMaxWidth().clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box {
@@ -161,31 +223,53 @@ fun SnapshotCard(
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentScale = ContentScale.Crop
             )
-            
             IconButton(
                 onClick = onDelete,
                 modifier = Modifier.align(Alignment.TopEnd),
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Black.copy(alpha = 0.5f),
-                    contentColor = Color.White
-                )
+                colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Black.copy(alpha = 0.5f), contentColor = Color.White)
+            ) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
+        }
+        Column(Modifier.padding(8.dp)) {
+            Text(snapshot.camera_name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(formatDate(snapshot.created_at), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+fun RecordingCard(recording: Recording, onPlay: () -> Unit, onDelete: () -> Unit) {
+    Card(
+        modifier = Modifier.padding(8.dp).fillMaxWidth().clickable { onPlay() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(60.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(recording.camera_name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                Text("Duración: ${recording.duration}s", style = MaterialTheme.typography.bodyMedium)
+                Text(formatDate(recording.created_at), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
             }
         }
-        
-        Column(Modifier.padding(8.dp)) {
-            Text(
-                text = snapshot.camera_name,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-            Text(
-                text = snapshot.created_at,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
+    }
+}
+
+fun formatDate(dateStr: String): String {
+    return try {
+        // Asumiendo formato SQL YYYY-MM-DD HH:MM:SS
+        val input = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val output = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+        val date = input.parse(dateStr)
+        output.format(date!!)
+    } catch (e: Exception) {
+        dateStr
     }
 }

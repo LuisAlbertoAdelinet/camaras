@@ -2,8 +2,14 @@
 package com.rtsp.cctv.ui.screens
 
 import android.app.Activity
+import android.content.ContentValues
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
@@ -55,10 +61,74 @@ import com.rtsp.cctv.data.TokenStore
 import com.rtsp.cctv.network.ApiClient
 import com.rtsp.cctv.network.snapshotUrl
 import javax.net.SocketFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.OptIn
 
 // Note: OptIn is a compiler feature, file-level annotation doesn't strictly need the import here if fully qualified at line 1.
+
+/**
+ * Capture a View to Bitmap including all transformations
+ */
+fun captureViewToBitmap(view: View): Bitmap? {
+    return try {
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+        bitmap
+    } catch (e: Exception) {
+        null
+    }
+}
+
+/**
+ * Save a Bitmap to the device's gallery (Pictures folder)
+ * Returns true if successful
+ */
+suspend fun saveBitmapToGallery(
+    context: android.content.Context,
+    bitmap: Bitmap,
+    cameraName: String
+): Boolean = withContext(Dispatchers.IO) {
+    try {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val filename = "CAM_${cameraName}_$timestamp.jpg"
+        
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/LisanCam")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+        }
+        
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        
+        uri?.let { imageUri ->
+            resolver.openOutputStream(imageUri)?.use { outputStream: OutputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+            }
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(imageUri, contentValues, null, null)
+            }
+            true
+        } ?: false
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
+    }
+}
 
 @Composable
 fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
@@ -172,10 +242,19 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 
     val scope = rememberCoroutineScope()
     val isSaving = remember { mutableStateOf(false) }
+    val isRecording = remember { mutableStateOf(false) }
+    
+    // Reference to the player container for screenshot capture
+    val playerContainerRef = remember { mutableStateOf<View?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         camera.value?.let { cam ->
-            RtspPlayer(rtspUrl = cam.rtspUrl, isLandscape = isLandscape, modifier = Modifier.fillMaxSize())
+            RtspPlayer(
+                rtspUrl = cam.rtspUrl, 
+                isLandscape = isLandscape, 
+                modifier = Modifier.fillMaxSize(),
+                onViewCreated = { view -> playerContainerRef.value = view }
+            )
         } ?: run {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -236,18 +315,32 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Save Snapshot Button
+                // Save Snapshot Button - Captures current view with zoom/transformations
                 FloatingActionButton(
                     onClick = {
                         scope.launch {
+                            val containerView = playerContainerRef.value
+                            if (containerView == null) {
+                                Toast.makeText(context, "Esperando video...", Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            
                             isSaving.value = true
-                            runCatching { api.saveSnapshot(cameraId) }
-                                .onSuccess { 
-                                    Toast.makeText(context, "Captura guardada ✓", Toast.LENGTH_SHORT).show()
-                                }
-                                .onFailure { 
+                            val bitmap = captureViewToBitmap(containerView)
+                            
+                            if (bitmap != null) {
+                                val cameraName = camera.value?.name?.replace(" ", "_") ?: "camera"
+                                val saved = saveBitmapToGallery(context, bitmap, cameraName)
+                                bitmap.recycle()
+                                
+                                if (saved) {
+                                    Toast.makeText(context, "Captura guardada en Galería ✓", Toast.LENGTH_SHORT).show()
+                                } else {
                                     Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
                                 }
+                            } else {
+                                Toast.makeText(context, "Error al capturar", Toast.LENGTH_SHORT).show()
+                            }
                             isSaving.value = false
                         }
                     },
@@ -262,16 +355,38 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                     }
                 }
 
-                // Record Button (Future)
+                // Record Button (Server-Side)
                 FloatingActionButton(
-                    onClick = { 
-                        Toast.makeText(context, "Grabación: Próximamente", Toast.LENGTH_SHORT).show()
+                    onClick = {
+                        scope.launch {
+                            try {
+                                if (isRecording.value) {
+                                    // Stop recording
+                                    api.stopRecording(cameraId)
+                                    isRecording.value = false
+                                    Toast.makeText(context, "Grabación detenida", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    // Start recording
+                                    api.startRecording(cameraId)
+                                    isRecording.value = true
+                                    Toast.makeText(context, "Grabando... (Máx 60s)", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                isRecording.value = false
+                            }
+                        }
                     },
-                    containerColor = Color.Black.copy(alpha = 0.5f),
+                    containerColor = if (isRecording.value) Color.Red else Color.Black.copy(alpha = 0.5f),
                     contentColor = Color.White,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
-                    Icon(Icons.Default.Videocam, contentDescription = "Grabar")
+                    if (isRecording.value) {
+                        Icon(Icons.Default.Stop, contentDescription = "Detener")
+                    } else {
+                        Icon(Icons.Default.Videocam, contentDescription = "Grabar")
+                    }
                 }
             }
         }
@@ -279,7 +394,12 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
 }
 
 @Composable
-fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier = Modifier) {
+fun RtspPlayer(
+    rtspUrl: String, 
+    isLandscape: Boolean = false, 
+    modifier: Modifier = Modifier,
+    onViewCreated: ((View) -> Unit)? = null
+) {
     val context = LocalContext.current
     
     // Use primitive state holders for better performance (avoids boxing)
@@ -362,6 +482,9 @@ fun RtspPlayer(rtspUrl: String, isLandscape: Boolean = false, modifier: Modifier
                             post { requestLayout() }
                         }
                     })
+                    
+                    // Report view created
+                    onViewCreated?.invoke(this)
                 }
             },
             update = { view ->

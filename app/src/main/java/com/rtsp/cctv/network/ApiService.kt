@@ -27,6 +27,16 @@ data class Snapshot(
     val created_at: String
 )
 
+data class Recording(
+    val id: Int,
+    val user_id: Int,
+    val camera_id: Int,
+    val camera_name: String,
+    val filename: String,
+    val duration: Int,
+    val created_at: String
+)
+
 interface ApiService {
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): LoginResponse
@@ -54,4 +64,17 @@ interface ApiService {
 
     @DELETE("snapshots/{id}")
     suspend fun deleteSnapshot(@Path("id") id: Int): Map<String, Any>
+
+    // Recording Endpoints
+    @POST("cameras/{id}/recording/start")
+    suspend fun startRecording(@Path("id") id: Int): Map<String, Any>
+
+    @POST("cameras/{id}/recording/stop")
+    suspend fun stopRecording(@Path("id") id: Int): Map<String, Any>
+
+    @GET("recordings")
+    suspend fun getRecordings(): Map<String, List<Recording>>
+
+    @DELETE("recordings/{id}")
+    suspend fun deleteRecording(@Path("id") id: Int): Map<String, Any>
 }
