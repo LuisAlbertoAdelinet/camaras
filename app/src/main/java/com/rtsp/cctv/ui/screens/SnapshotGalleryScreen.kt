@@ -178,7 +178,7 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
-                                .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=${tokenStore.getToken()}")
+                                .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=${tokenStore.getToken()}&v=${snapshot.id}")
                                 .build(),
                             contentDescription = "Full Screen Snapshot",
                             modifier = Modifier.fillMaxSize(),
@@ -213,7 +213,7 @@ fun SnapshotCard(snapshot: Snapshot, token: String, onClick: () -> Unit, onDelet
         Box {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=$token")
+                    .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=$token&v=${snapshot.id}")
                     .crossfade(true)
                     .build(),
                 contentDescription = "Capture",

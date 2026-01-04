@@ -149,10 +149,13 @@ fun ModernCameraCard(
                 .fillMaxWidth()
                 .height(160.dp)
         ) {
-            // Camera snapshot as background (Using Coil cache)
+            // Camera snapshot as background (Forced caching)
             val requestBuilder = ImageRequest.Builder(context)
                 .data(snapshotUrl(camera.id, token))
-                .crossfade(true)
+                .diskCacheKey("cam_snap_${camera.id}")
+                .memoryCacheKey("cam_snap_${camera.id}")
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
 
             AsyncImage(
                 model = requestBuilder.build(),
