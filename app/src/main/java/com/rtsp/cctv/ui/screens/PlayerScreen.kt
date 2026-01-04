@@ -249,12 +249,8 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     val requestBuilder = ImageRequest.Builder(context)
-                        .data(snapshotUrl(cameraId))
+                        .data("${snapshotUrl(cameraId, tokenStore.getToken())}&t=${System.currentTimeMillis()}")
                         .crossfade(true)
-                    
-                    tokenStore.getToken()?.let { token ->
-                        requestBuilder.addHeader("Authorization", "Bearer $token")
-                    }
                     
                     AsyncImage(
                         model = requestBuilder.build(),

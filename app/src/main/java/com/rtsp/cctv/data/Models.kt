@@ -8,7 +8,8 @@ data class Camera(
     @Json(name = "rtsp_url") val rtspUrl: String,
     val channel: Int,
     val location: String,
-    @Json(name = "is_active") val isActive: Boolean
+    @Json(name = "is_active") val isActive: Boolean,
+    @Json(name = "group_name") val group_name: String? = "General"
 )
 
 data class User(

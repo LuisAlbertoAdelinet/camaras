@@ -140,20 +140,19 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
                                 RecordingCard(
                                     recording = recording,
                                     onPlay = {
-                                        val url = "${ApiConfig.BASE_URL}recordings/${recording.id}/video"
+                                        val token = tokenStore.getToken() ?: ""
+                                        val url = "${ApiConfig.BASE_URL}recordings/${recording.id}/video?token=$token"
                                         val intent = Intent(Intent.ACTION_VIEW)
                                         intent.setDataAndType(Uri.parse(url), "video/mp4")
                                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         
-                                        // Add auth token if possible (some players support headers, most don't easily via Intent)
-                                        // For simplicity, we rely on browser/player handling it or public link if secured by cookie (not case here).
-                                        // Actually, since our API requires Bearer Token, standard Intent might fail unless we download or use specialized player.
-                                        // For MVP, let's try opening. If fails, we might need a WebView or simple VideoView inside app.
-                                        // Standard players won't send Bearer header.
-                                        // Workaround: Use a temporary token in URL or just a WebView dialog.
-                                        // Let's implement a simple VideoDialog.
-                                        Toast.makeText(context, "Reproduciendo...", Toast.LENGTH_SHORT).show()
-                                        // For now, simpler to reuse the Dialog logic but for video
+                                        try {
+                                            context.startActivity(intent)
+                                            Toast.makeText(context, "Abriendo reproductor...", Toast.LENGTH_SHORT).show()
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "No hay app para reproducir video", Toast.LENGTH_SHORT).show()
+                                        }
                                     },
                                     onDelete = {
                                         scope.launch {
@@ -179,8 +178,7 @@ fun SnapshotGalleryScreen(onBack: () -> Unit) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
-                                .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image")
-                                .addHeader("Authorization", "Bearer ${tokenStore.getToken()}")
+                                .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=${tokenStore.getToken()}&t=${System.currentTimeMillis()}")
                                 .build(),
                             contentDescription = "Full Screen Snapshot",
                             modifier = Modifier.fillMaxSize(),
@@ -215,8 +213,7 @@ fun SnapshotCard(snapshot: Snapshot, token: String, onClick: () -> Unit, onDelet
         Box {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image")
-                    .addHeader("Authorization", "Bearer $token")
+                    .data("${ApiConfig.BASE_URL}snapshots/${snapshot.id}/image?token=$token&t=${System.currentTimeMillis()}")
                     .crossfade(true)
                     .build(),
                 contentDescription = "Capture",

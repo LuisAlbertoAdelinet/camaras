@@ -85,6 +85,8 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit, onOpenProfile: () -> Unit) {
             )
         }
     ) { padding ->
+        val groupedCameras = cameras.value.groupBy { it.group_name ?: "General" }
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(16.dp),
@@ -92,12 +94,27 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit, onOpenProfile: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            items(cameras.value, key = { it.id }) { camera ->
-                ModernCameraCard(
-                    camera = camera,
-                    token = tokenStore.getToken(),
-                    onClick = { onOpenCamera(camera.id) }
-                )
+            groupedCameras.forEach { (group, cameraList) ->
+                // Group Header
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                    Text(
+                        text = group,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 4.dp)
+                            .fillMaxWidth()
+                    )
+                }
+
+                items(cameraList, key = { it.id }) { camera ->
+                    ModernCameraCard(
+                        camera = camera,
+                        token = tokenStore.getToken(),
+                        onClick = { onOpenCamera(camera.id) }
+                    )
+                }
             }
         }
     }
@@ -124,12 +141,11 @@ fun ModernCameraCard(
                 .fillMaxWidth()
                 .height(160.dp)
         ) {
-            // Camera snapshot as background
+            // Camera snapshot as background with cache busting
+            val currentTimestamp = System.currentTimeMillis() / 60000 // Refresh every minute
             val requestBuilder = ImageRequest.Builder(context)
-                .data(snapshotUrl(camera.id))
+                .data("${snapshotUrl(camera.id, token)}&t=$currentTimestamp")
                 .crossfade(true)
-
-            token?.let { requestBuilder.addHeader("Authorization", "Bearer $it") }
 
             AsyncImage(
                 model = requestBuilder.build(),
