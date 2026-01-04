@@ -20,6 +20,10 @@ fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenStore = remember { TokenStore(context) }
+    
+    // Shared cameras state for the whole session
+    val cameras = remember { mutableStateOf<List<com.rtsp.cctv.data.Camera>>(emptyList()) }
+    val isCamerasLoaded = remember { mutableStateOf(false) }
 
     val startRoute = if (tokenStore.hasToken()) "grid" else "login"
 
@@ -35,6 +39,12 @@ fun CctvApp(isDark: Boolean, onThemeChange: (Boolean) -> Unit) {
         }
         composable("grid") {
             CameraGridScreen(
+                cameras = cameras.value,
+                isLoaded = isCamerasLoaded.value,
+                onRefresh = { list -> 
+                    cameras.value = list
+                    isCamerasLoaded.value = true
+                },
                 onOpenCamera = { cameraId ->
                     navController.navigate("player/$cameraId")
                 },

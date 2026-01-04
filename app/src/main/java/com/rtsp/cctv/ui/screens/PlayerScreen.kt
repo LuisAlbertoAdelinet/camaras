@@ -341,49 +341,28 @@ fun PlayerScreen(cameraId: Int, onBack: () -> Unit) {
                 FloatingActionButton(
                     onClick = {
                         scope.launch {
-                            val containerView = playerContainerRef.value
-                            if (containerView == null) {
-                                Toast.makeText(context, "Esperando video...", Toast.LENGTH_SHORT).show()
-                                return@launch
-                            }
-                            
                             isSaving.value = true
-                            val bitmap = captureViewToBitmap(containerView)
                             
-                            if (bitmap != null) {
-                                // 1. Save to Gallery
-                                val cameraName = camera.value?.name?.replace(" ", "_") ?: "camera"
-                                val savedToGallery = saveBitmapToGallery(context, bitmap, cameraName)
-                                
-                                // 2. Upload to Server
-                                val cacheFile = saveBitmapToCache(context, bitmap)
-                                var uploaded = false
-                                if (cacheFile != null) {
-                                    runCatching {
-                                        val requestFile = cacheFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                                        val body = MultipartBody.Part.createFormData("image", cacheFile.name, requestFile)
-                                        api.uploadSnapshot(cameraId, body)
-                                    }.onSuccess {
-                                        uploaded = true
-                                        cacheFile.delete()
-                                    }.onFailure { e ->
-                                        e.printStackTrace()
-                                    }
+                            // 1. Capture locally ONLY for phone gallery (might be black on some devices due to SurfaceView)
+                            val containerView = playerContainerRef.value
+                            if (containerView != null) {
+                                val bitmap = captureViewToBitmap(containerView)
+                                if (bitmap != null) {
+                                    val cameraName = camera.value?.name?.replace(" ", "_") ?: "camera"
+                                    saveBitmapToGallery(context, bitmap, cameraName)
+                                    bitmap.recycle()
                                 }
-                                
-                                bitmap.recycle()
-                                
-                                if (savedToGallery || uploaded) {
-                                    val msg = if (savedToGallery && uploaded) "Guardada y subida ✓" 
-                                             else if (savedToGallery) "Guardada en Galería ✓" 
-                                             else "Subida al servidor ✓"
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "Error al capturar", Toast.LENGTH_SHORT).show()
                             }
+                            
+                            // 2. Trigger Server-side capture (Reliable, high-quality, non-black)
+                            runCatching { api.saveSnapshot(cameraId) }
+                                .onSuccess {
+                                    Toast.makeText(context, "Captura guardada en la nube ✓", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure { e ->
+                                    Toast.makeText(context, "Error en captura remota", Toast.LENGTH_SHORT).show()
+                                }
+                            
                             isSaving.value = false
                         }
                     },

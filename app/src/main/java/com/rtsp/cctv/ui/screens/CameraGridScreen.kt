@@ -48,15 +48,23 @@ import androidx.compose.material3.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraGridScreen(onOpenCamera: (Int) -> Unit, onOpenProfile: () -> Unit) {
+fun CameraGridScreen(
+    cameras: List<Camera>,
+    isLoaded: Boolean,
+    onRefresh: (List<Camera>) -> Unit,
+    onOpenCamera: (Int) -> Unit, 
+    onOpenProfile: () -> Unit
+) {
     val context = LocalContext.current
     val tokenStore = remember { TokenStore(context) }
     val api = remember { ApiClient(tokenStore).api }
-    val cameras = remember { mutableStateOf<List<Camera>>(emptyList()) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        runCatching { api.getCameras() }
-            .onSuccess { cameras.value = it.items }
+    LaunchedEffect(isLoaded) {
+        if (!isLoaded) {
+            runCatching { api.getCameras() }
+                .onSuccess { onRefresh(it.items) }
+        }
     }
 
     Scaffold(
@@ -85,7 +93,7 @@ fun CameraGridScreen(onOpenCamera: (Int) -> Unit, onOpenProfile: () -> Unit) {
             )
         }
     ) { padding ->
-        val groupedCameras = cameras.value.groupBy { it.group_name ?: "General" }
+        val groupedCameras = cameras.groupBy { it.group_name ?: "General" }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -141,10 +149,9 @@ fun ModernCameraCard(
                 .fillMaxWidth()
                 .height(160.dp)
         ) {
-            // Camera snapshot as background with cache busting
-            val currentTimestamp = System.currentTimeMillis() / 60000 // Refresh every minute
+            // Camera snapshot as background (Using Coil cache)
             val requestBuilder = ImageRequest.Builder(context)
-                .data("${snapshotUrl(camera.id, token)}&t=$currentTimestamp")
+                .data(snapshotUrl(camera.id, token))
                 .crossfade(true)
 
             AsyncImage(
